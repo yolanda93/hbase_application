@@ -42,16 +42,21 @@ Script parameters:
 
 Usage example:
 
-   Load: ./hbaseApp.sh mode dataFolder
-    o Ex:./hbaseApp.sh 4 /local/data
-   Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
-    o Ex:./hbaseApp.sh 1 1450714465000 1450724465000 7 en /local/output/
-   Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
-    o Ex:./hbaseApp.sh 2 1450714465000 1450724465000 5 en,it,es /local/output/
-   Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
-    o Ex:./hbaseApp.sh 3 1450714465000 1450724465000 10 /local/output/
+   o Load: ./hbaseApp.sh mode dataFolder
+      Ex:./hbaseApp.sh 4 /local/data
+   o Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
+      Ex:./hbaseApp.sh 1 1450714465000 1450724465000 7 en /local/output/
+   o Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
+      Ex:./hbaseApp.sh 2 1450714465000 1450724465000 5 en,it,es /local/output/
+   o Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
+      Ex:./hbaseApp.sh 3 1450714465000 1450724465000 10 /local/output/
 
 ```
 ## Contact information
 
 Yolanda de la Hoz Simón. yolanda93h@gmail.com
+
+
+Steps:
+
+1. hbase-site.xml with the property hbase.zookeeper.quorum: it must point to ZK instance of the mini cluster assigned to your group

@@ -1,11 +1,18 @@
 package master;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+
 /**
  *
  * @author Yolanda de la Hoz Simon - 53826071E
  * @version 1.2 2 de Enero de 2016
  */
 public class hbaseApp {
+    private static final String ID = "53826071E";
 	private int startTS;
 	private int endTS;
 	private int N;
@@ -46,6 +53,25 @@ public class hbaseApp {
 	private void load() {
 	}
 
+	/**
+	 * Method to store the results of the query in a file  
+	 */
+	private void writeInOutputFile(String query, String language, String position, String word, String startTS,String endTS) {
+        File file = new File(outputFolderPath + "/" + ID + "_" + query + ".out");
+        String content = language + "," + position + "," + word + "," + startTS + "," + endTS;
+        BufferedWriter bw = null;
+        try {
+            bw = new BufferedWriter(new FileWriter(file, true));
+            bw.append(content);
+            bw.newLine();
+            bw.close();
+        } catch (FileNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
+        }
+        System.out.println("Write done");	
+	}
 	/**
 	 * Method to set the necessary parameters
 	 * @param args Arguments passed by command line       
