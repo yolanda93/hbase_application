@@ -22,6 +22,11 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.TableName;
 
@@ -49,7 +54,24 @@ public class hbaseApp {
 	 * a time interval defined with a start and end timestamp. Start and end timestamp are
 	 * in milliseconds.      
 	 */
-	private void firstQuery() {
+
+	private void firstQuery(String start_timestamp, String end_timestamp,String N,String lang, String outputFolderPath) {
+		Scan scan = new Scan(KeyGenerator.generateStartKey(start_timestamp),
+				       KeyGenerator.generateEndKey(end_timestamp));
+		
+		for(int i =0;i<languages.length;i++){
+			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
+			CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
+			scan.setFilter(f);
+		}
+
+		ResultScanner rs = table.getScanner(scan);
+		Result res = rs.next();
+		while (res!=null && !res.isEmpty()){
+			// Do something with the result.
+		 res = rs.next();
+		 System.out.println("The result for the first query is:" + res.toString());
+	    }
 	}
 
 	/**
@@ -58,7 +80,23 @@ public class hbaseApp {
      * with the provided start and end timestamp. Start and end timestamp are in
      * milliseconds. 
 	 */
-	private void secondQuery() {
+	private void secondQuery(String start_timestamp, String end_timestamp,String N,String[] languages, String outputFolderPath) {
+		Scan scan = new Scan(KeyGenerator.generateStartKey(start_timestamp),
+				       KeyGenerator.generateEndKey(end_timestamp));
+		
+		for(int i =0;i<languages.length;i++){
+			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
+			CompareFilter.CompareOp.EQUAL,Bytes.toBytes(languages[i]));	
+			scan.setFilter(f);
+		}
+
+		ResultScanner rs = table.getScanner(scan);
+		Result res = rs.next();
+		while (res!=null && !res.isEmpty()){
+			// Do something with the result.
+		 res = rs.next();
+		 System.out.println("The result for the second query is:" + res.toString());
+	    }
 	}
 
 	/**
@@ -67,20 +105,28 @@ public class hbaseApp {
      * language in a time interval defined with the provided start and end timestamp. Start
      * and end timestamp are in milliseconds.      
 	 */
-	private void thirdQuery() {
+	private void thirdQuery(String start_timestamp, String end_timestamp,String N,String outputFolderPath) {
+	 Scan scan = new Scan(KeyGenerator.generateStartKey(start_timestamp),
+			       KeyGenerator.generateEndKey(end_timestamp));	
+
+		ResultScanner rs = table.getScanner(scan);
+		Result res = rs.next();
+		while (res!=null && !res.isEmpty()){
+			// Do something with the result.
+		 res = rs.next();
+		 System.out.println("The result for the first query is:" + res.toString());
+	     }	
 	}
 
 	/**
 	 * Method to create the table in hbase
 	 */
 	private void createTable() {
-		// Instantiating configuration class
-		Configuration conf = HBaseConfiguration.create();
+		System.out.println("Creating table in hbase");
+		Configuration conf = HBaseConfiguration.create(); // Instantiating configuration class
 
-		// Instantiating HbaseAdmin class
-		try {
+		try {		
 			admin = new HBaseAdmin(conf);
-  
 			// Instantiating table descriptor class
 			HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("TopTopics"));
 
@@ -106,8 +152,9 @@ public class hbaseApp {
 	    Result res = table.get(get);
 	    if(res == null && res.isEmpty()){ // insert in table
 	    	Put put = new Put(key);
-	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("topic"),Bytes.toBytes(hashtag));
-	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("counts"),Bytes.toBytes(counts));
+	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"),Bytes.toBytes(hashtag));
+	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("LANG"),Bytes.toBytes(counts));
+	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("COUNTS"),Bytes.toBytes(counts));
 	    	table.put(put);
 	    }
 	}
@@ -115,7 +162,7 @@ public class hbaseApp {
 	/**
 	 * Method to load the files in hbase
 	 */
-	private void load() {
+	private void load(String dataFolder) {
 	   System.out.println("Loading data into hbase");	
 		Hashtable<String, Integer> hashtags = new Hashtable<String, Integer>();
 		try(BufferedReader br = new BufferedReader(new FileReader(dataFolder))) {
@@ -156,48 +203,21 @@ public class hbaseApp {
         }
         System.out.println("Write done");	
 	}
-	/**
-	 * Method to set the necessary parameters
-	 * @param args Arguments passed by command line       
-	 */
-	private void setContext(String[] args, int mode) {
-		switch (mode) {
-		case 1: 	dataFolder=args[1];
-		break;
-		case 2: 	startTS=Integer.parseInt(args[1]);
-		endTS=Integer.parseInt(args[2]);
-		N=Integer.parseInt(args[3]);
-		languages=args[4].split(",");;
-		outputFolderPath=args[5];
-		break;
-		case 3: 	startTS=Integer.parseInt(args[1]);
-		endTS=Integer.parseInt(args[2]);
-		N=Integer.parseInt(args[3]);
-		languages=args[4].split(",");;
-		outputFolderPath=args[5];
-		break;
-		case 4: 	startTS=Integer.parseInt(args[1]);
-		endTS=Integer.parseInt(args[2]);
-		N=Integer.parseInt(args[3]);
-		outputFolderPath=args[4];
-		break;     	
-		}
-	}
 
 	/**
 	 * Method to start the hbase app with the selected query
 	 * @param mode Mode to start the app. Mode 1 reads from file. Mode 2 reads from twitter API.     
 	 */
-	private void start(int mode) {
-
+	private void start(String[] args,int mode) {
+	    createTable();
 		switch (mode) {
-		case 1: 	load();
+		case 1: 	load(args[1]);
 		break;
-		case 2: 	firstQuery();
+		case 2: 	firstQuery(args[1],args[2],args[3],args[4],args[5]);
 		break;
-		case 3: 	secondQuery();
+		case 3: 	secondQuery(args[1],args[2],args[3],args[4].split(","),args[5]);
 		break;
-		case 4: 	thirdQuery();
+		case 4: 	thirdQuery(args[1],args[2],args[3],args[4]);
 		break;     	
 		}
 	}
@@ -231,8 +251,7 @@ public class hbaseApp {
 				}  
 
 				hbaseApp app = new hbaseApp();
-				app.setContext(args,mode);
-				app.start(mode);
+				app.start(args,mode);
 				app.admin.shutdown();
 
 			} catch (Exception e) {
