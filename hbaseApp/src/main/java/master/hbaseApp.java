@@ -1,10 +1,31 @@
 package master;
 
+import java.io.BufferedReader;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Hashtable;
+
+import javax.crypto.KeyGenerator;
+
+import java.io.IOException;
+
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.TableName;
+
+import org.apache.hadoop.conf.Configuration;
 
 /**
  *
@@ -19,6 +40,8 @@ public class hbaseApp {
 	private String[] languages;
 	private String outputFolderPath;
 	private String dataFolder;
+	private HBaseAdmin admin;
+	private HTable table;
 
 	/**
 	 * Method to perform the first query
@@ -48,9 +71,70 @@ public class hbaseApp {
 	}
 
 	/**
+	 * Method to create the table in hbase
+	 */
+	private void createTable() {
+		// Instantiating configuration class
+		Configuration conf = HBaseConfiguration.create();
+
+		// Instantiating HbaseAdmin class
+		try {
+			admin = new HBaseAdmin(conf);
+  
+			// Instantiating table descriptor class
+			HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("TopTopics"));
+
+			// Adding column families to table descriptor
+			tableDescriptor.addFamily(new HColumnDescriptor("hashtags"));
+
+			if(!admin.tableExists("TopTopics"))// Execute the table through admin			
+			 admin.createTable(tableDescriptor);
+			 table = new HTable(conf, "TopTopics");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println(" Table created ");
+	}
+
+	/**
+	 * Method to insert into the hbase table
+	 */
+	private void insertIntoTable(String timestamp, String lang,String hashtag, String counts) {
+	    byte[] key = KeyGenerator.generateKey(timestamp,lang);
+	    Get get = new Get(key);
+	    Result res = table.get(get);
+	    if(res == null && res.isEmpty()){ // insert in table
+	    	Put put = new Put(key);
+	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("topic"),Bytes.toBytes(hashtag));
+	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("counts"),Bytes.toBytes(counts));
+	    	table.put(put);
+	    }
+	}
+	
+	/**
 	 * Method to load the files in hbase
 	 */
 	private void load() {
+	   System.out.println("Loading data into hbase");	
+		Hashtable<String, Integer> hashtags = new Hashtable<String, Integer>();
+		try(BufferedReader br = new BufferedReader(new FileReader(dataFolder))) {
+			for(String line; (line = br.readLine()) != null; ) {
+				// process the line.
+				String[] fields = line.split(",");
+				int pos = 0;
+				String timestamp = fields[pos++];
+				String lang = fields[pos++];
+				while(pos<fields.length){
+					insertIntoTable(timestamp,lang,fields[pos++],fields[pos++]);
+				}
+			}
+		System.out.println("Data sucessfully loaded");	
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}	
 	}
 
 	/**
@@ -149,6 +233,7 @@ public class hbaseApp {
 				hbaseApp app = new hbaseApp();
 				app.setContext(args,mode);
 				app.start(mode);
+				app.admin.shutdown();
 
 			} catch (Exception e) {
 				System.out.println(e.getMessage());

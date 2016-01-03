@@ -17,20 +17,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.10</artifactId>
-            <version>0.8.2.1</version>
+        	<groupId>org.apache.hbase</groupId>
+        	<artifactId>hbase-client</artifactId>
+        	<version>0.98.9-hadoop2</version>
         </dependency>
         <dependency>
-           <groupId>org.twitter4j</groupId>
-           <artifactId>twitter4j-core</artifactId>
-           <version>3.0.5</version>
-         </dependency>
-          <dependency>
-           <groupId>org.twitter4j</groupId>
-           <artifactId>twitter4j-stream</artifactId>
-           <version>3.0.5</version>
-         </dependency>
+        	<groupId>org.apache.hbase</groupId>
+        	<artifactId>hbase-server</artifactId>
+        	<version>0.98.9-hadoop2</version>
+        </dependency>
     </dependencies>
     
     <build>
