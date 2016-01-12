@@ -59,4 +59,45 @@ Yolanda de la Hoz Simón. yolanda93h@gmail.com
 
 Steps:
 
+0. Generate the files lang.out
 1. hbase-site.xml with the property hbase.zookeeper.quorum: it must point to ZK instance of the mini cluster assigned to your group
+2. Load in hbase files
+
+Store the result of the query in a file 
+
+Compile the project and generate hbaseApp.sh script:
+
+mvn clean compile package appassembler:assemble
+
+## Example of execution on a cluster
+
+1) Connection to the cluster 
+username: masteruser1
+password: 7Uljjbpb4
+
+Copy the files
+scp -P 51001 -r appassembler masteruser1@138.4.110.141:/home/masteruser1
+
+Zookeeper on H2 must be up and running
+
+ssh masteruser1@138.4.110.141 -p 51002 --> storm H2	
+
+./zookeeper-3.4.6/bin/zkServer.sh start
+./zookeeper-3.4.6/bin/zkServer.sh stop
+
+ssh masteruser1@138.4.110.141 -p 51001 --> Hadoop and Hbase H1	
+
+Hadoop start/stop from H1: 
+ Start:  ./hadoop-2.5.2/sbin/start-dfs.sh
+ Stop:   ./hadoop-2.5.2/sbin/stop-dfs.sh
+
+Hbase
+start/stop from H1: 
+
+Start:  ./hbase-0.98.16.1-hadoop2/bin/start-hbase.sh
+Stop:   ./hbase-0.98.16.1-hadoop2/bin/stop-hbase.sh
+
+1) Run hbase 
+
+Start HBase: bin/start-hbase.sh
+Start the shell: bin/hbase shell

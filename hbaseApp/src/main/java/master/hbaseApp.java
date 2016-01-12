@@ -2,6 +2,7 @@ package master;
 
 import java.io.BufferedReader;
 
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +11,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Hashtable;
 
-import javax.crypto.KeyGenerator;
 
 import java.io.IOException;
 
@@ -49,29 +49,65 @@ public class hbaseApp {
 	private HTable table;
 
 	/**
+	 * Method to generate the structure of the key  
+	 */
+	private byte[] generateStartKey(String timestamp) {
+		byte[] key = new byte[44];
+		System.arraycopy(Bytes.toBytes(timestamp),0,key,0,timestamp.length());
+		return key;
+	}
+	
+	/**
+	 * Method to generate the structure of the key  
+	 */
+	private byte[] generateEndKey(String timestamp) {
+		byte[] key = new byte[44];
+		System.arraycopy(Bytes.toBytes(timestamp),0,key,0,timestamp.length());
+		return key;
+	}
+	
+	/**
 	 * Method to perform the first query
 	 * Given a language (lang), do find the Top-N most used words for the given language in
 	 * a time interval defined with a start and end timestamp. Start and end timestamp are
 	 * in milliseconds.      
 	 */
-
+	private byte[] generateKey(String timestamp, String lang) {
+		byte[] key = new byte[44];
+		System.arraycopy(Bytes.toBytes(timestamp),0,key,0,timestamp.length());
+		System.arraycopy(Bytes.toBytes(lang),0,key,20,lang.length());
+		return key;
+	}
+	
+	/**
+	 * Method to perform the first query
+	 * Given a language (lang), do find the Top-N most used words for the given language in
+	 * a time interval defined with a start and end timestamp. Start and end timestamp are
+	 * in milliseconds.      
+	 */
 	private void firstQuery(String start_timestamp, String end_timestamp,String N,String lang, String outputFolderPath) {
-		Scan scan = new Scan(KeyGenerator.generateStartKey(start_timestamp),
-				       KeyGenerator.generateEndKey(end_timestamp));
-		
+		Scan scan = new Scan(generateStartKey(start_timestamp),
+				generateEndKey(end_timestamp));
+
 		for(int i =0;i<languages.length;i++){
 			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
-			CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
+					CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
 			scan.setFilter(f);
 		}
 
-		ResultScanner rs = table.getScanner(scan);
-		Result res = rs.next();
-		while (res!=null && !res.isEmpty()){
-			// Do something with the result.
-		 res = rs.next();
-		 System.out.println("The result for the first query is:" + res.toString());
-	    }
+		ResultScanner rs;
+		try {
+			rs = table.getScanner(scan);
+			Result res = rs.next();
+			while (res!=null && !res.isEmpty()){
+				// Do something with the result.
+				res = rs.next();
+				System.out.println("The result for the first query is:" + res.toString());
+			} 
+		}catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -81,41 +117,54 @@ public class hbaseApp {
      * milliseconds. 
 	 */
 	private void secondQuery(String start_timestamp, String end_timestamp,String N,String[] languages, String outputFolderPath) {
-		Scan scan = new Scan(KeyGenerator.generateStartKey(start_timestamp),
-				       KeyGenerator.generateEndKey(end_timestamp));
-		
+		Scan scan = new Scan(generateStartKey(start_timestamp),
+				generateEndKey(end_timestamp));
+
 		for(int i =0;i<languages.length;i++){
 			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
-			CompareFilter.CompareOp.EQUAL,Bytes.toBytes(languages[i]));	
+					CompareFilter.CompareOp.EQUAL,Bytes.toBytes(languages[i]));	
 			scan.setFilter(f);
 		}
 
-		ResultScanner rs = table.getScanner(scan);
-		Result res = rs.next();
-		while (res!=null && !res.isEmpty()){
-			// Do something with the result.
-		 res = rs.next();
-		 System.out.println("The result for the second query is:" + res.toString());
-	    }
+		ResultScanner rs;
+		try {
+			rs = table.getScanner(scan);
+			Result res = rs.next();
+			while (res!=null && !res.isEmpty()){
+				// Do something with the result.
+				res = rs.next();
+				System.out.println("The result for the second query is:" + res.toString());
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
 	 * Method to perform the third query
 	 * Do find the Top-N most used words and the frequency of each word regardless the
      * language in a time interval defined with the provided start and end timestamp. Start
-     * and end timestamp are in milliseconds.      
+     * and end timestamp are in milliseconds.      	
 	 */
 	private void thirdQuery(String start_timestamp, String end_timestamp,String N,String outputFolderPath) {
-	 Scan scan = new Scan(KeyGenerator.generateStartKey(start_timestamp),
-			       KeyGenerator.generateEndKey(end_timestamp));	
+		Scan scan = new Scan(generateStartKey(start_timestamp),
+				generateEndKey(end_timestamp));	
 
-		ResultScanner rs = table.getScanner(scan);
-		Result res = rs.next();
-		while (res!=null && !res.isEmpty()){
-			// Do something with the result.
-		 res = rs.next();
-		 System.out.println("The result for the first query is:" + res.toString());
-	     }	
+		ResultScanner rs;
+		try {
+			rs = table.getScanner(scan);
+			
+			Result res = rs.next();
+			while (res!=null && !res.isEmpty()){
+				// Do something with the result.
+				res = rs.next();
+				System.out.println("The result for the first query is:" + res.toString());
+			}	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -136,27 +185,31 @@ public class hbaseApp {
 			if(!admin.tableExists("TopTopics"))// Execute the table through admin			
 			 admin.createTable(tableDescriptor);
 			 table = new HTable(conf, "TopTopics");
+			 System.out.println(" Table created ");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println(" Table created ");
 	}
 
 	/**
 	 * Method to insert into the hbase table
 	 */
 	private void insertIntoTable(String timestamp, String lang,String hashtag, String counts) {
-	    byte[] key = KeyGenerator.generateKey(timestamp,lang);
-	    Get get = new Get(key);
-	    Result res = table.get(get);
-	    if(res == null && res.isEmpty()){ // insert in table
-	    	Put put = new Put(key);
-	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"),Bytes.toBytes(hashtag));
-	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("LANG"),Bytes.toBytes(counts));
-	    	put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("COUNTS"),Bytes.toBytes(counts));
-	    	table.put(put);
-	    }
+		byte[] key = generateKey(timestamp,lang);
+		Get get = new Get(key);
+		Result res;
+		try {
+			res = table.get(get);
+			if(res == null){ // insert in table
+				Put put = new Put(key);
+				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"),Bytes.toBytes(hashtag));
+				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("LANG"),Bytes.toBytes(lang));
+				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("COUNTS"),Bytes.toBytes(counts));
+				table.put(put);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
 	}
 	
 	/**
@@ -167,7 +220,7 @@ public class hbaseApp {
 		Hashtable<String, Integer> hashtags = new Hashtable<String, Integer>();
 		try(BufferedReader br = new BufferedReader(new FileReader(dataFolder))) {
 			for(String line; (line = br.readLine()) != null; ) {
-				// process the line.
+				// process line by line
 				String[] fields = line.split(",");
 				int pos = 0;
 				String timestamp = fields[pos++];
@@ -228,12 +281,13 @@ public class hbaseApp {
 	 * @throws java.lang.Exception    
 	 */
 	public static void main(String[] args) throws Exception {
+		org.apache.log4j.BasicConfigurator.configure();
 		int mode = 0;
 		if (args.length > 0) {
 			System.out.println("Started hbaseApp with mode: " + args[0]);
 			try {
 				mode = Integer.parseInt(args[0]);
-				if (mode==1 && args.length!=2 ) {
+				if (mode==1 && args.length<2 ) {
 					System.out.println("To start the App with mode 1 it is required the mode and the dataFolder");
 					System.exit(1);  
 				}
