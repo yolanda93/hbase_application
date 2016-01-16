@@ -86,15 +86,14 @@ public class hbaseApp {
 	 * in milliseconds.      
 	 */
 	private void firstQuery(String start_timestamp, String end_timestamp,String N,String lang, String outputFolderPath) {
+		System.out.println("Executing the first query");
 		Scan scan = new Scan(generateStartKey(start_timestamp),
 				generateEndKey(end_timestamp));
-
-		for(int i =0;i<languages.length;i++){
-			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
-					CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
-			scan.setFilter(f);
-		}
-
+		System.out.println("Executing the first query");
+	    Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
+				CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
+		scan.setFilter(f);
+		System.out.println("dsfsdfsd");
 		ResultScanner rs;
 		try {
 			rs = table.getScanner(scan);
@@ -171,15 +170,13 @@ public class hbaseApp {
 	 * Method to create the table in hbase
 	 */
 	private void createTable() {
-		System.out.println("Creating table in hbase");
 		System.setProperty("hadoop.home.dir", "/");
 		Configuration conf = HBaseConfiguration.create(); // Instantiating configuration class
 
 		try {
 			admin = new HBaseAdmin(conf);
-			//if(!admin.tableExists("TopTopics")){// Execute the table through admin	
+			if(!admin.tableExists("TopTopics")){// Execute the table through admin	
 				System.out.println("Creating table in hbase");
-				if(!admin.tableExists("TopTopics")){
 				// Instantiating table descriptor class
 				HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("TopTopics"));
 
@@ -188,9 +185,8 @@ public class hbaseApp {
                  
 				admin.createTable(tableDescriptor);				
 				System.out.println(" Table created ");
-                }
-				table = new HTable(conf, "TopTopics");
-			//}
+			 }
+			table = new HTable(conf, "TopTopics");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -206,6 +202,7 @@ public class hbaseApp {
 		try {
 			res = table.get(get);
 			if(res != null){ // insert in table
+				System.out.println("res not null");
 				Put put = new Put(key);
 				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"),Bytes.toBytes(hashtag));
 				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("LANG"),Bytes.toBytes(lang));
@@ -284,13 +281,13 @@ public class hbaseApp {
 	private void start(String[] args,int mode) {
 	    createTable();
 		switch (mode) {
-		case 1: 	load(args[1]);
+		case 1: 	firstQuery(args[1],args[2],args[3],args[4],args[5]);
 		break;
-		case 2: 	firstQuery(args[1],args[2],args[3],args[4],args[5]);
+		case 2: 	secondQuery(args[1],args[2],args[3],args[4].split(","),args[5]);
 		break;
-		case 3: 	secondQuery(args[1],args[2],args[3],args[4].split(","),args[5]);
+		case 3: 	thirdQuery(args[1],args[2],args[3],args[4]);
 		break;
-		case 4: 	thirdQuery(args[1],args[2],args[3],args[4]);
+		case 4: 	load(args[1]);
 		break;     	
 		}
 	}
@@ -307,7 +304,7 @@ public class hbaseApp {
 			System.out.println("Started hbaseApp with mode: " + args[0]);
 			try {
 				mode = Integer.parseInt(args[0]);
-				if (mode==1 && args.length<2 ) {
+				if (mode==4 && args.length<2 ) {
 					System.out.println("To start the App with mode 1 it is required the mode and the dataFolder");
 					System.exit(1);  
 				}
@@ -319,8 +316,8 @@ public class hbaseApp {
 					System.out.println("To start the App with mode 3 it is required the mode startTS endTS N language outputFolder");
 					System.exit(1);  
 				}     
-				if (mode==4 && args.length!=5 ) {
-					System.out.println("To start the App with mode 4 it is required the mode startTS endTS N outputFolder");
+				if (mode==1 && args.length!=6) {
+					System.out.println("To start the App with mode 1 it is required the mode startTS endTS N outputFolder");
 					System.exit(1);  
 				}  
 

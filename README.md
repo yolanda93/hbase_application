@@ -99,8 +99,8 @@ Start HBase: bin/start-hbase.sh
 Start the shell: bin/hbase shell
 
 Mode 1
-./hbaseApp.sh 1  "/home/masteruser1/logs"
-
+./hbaseApp.sh 4  "/home/masteruser1/logs" --> load in data folder
+1  "/home/yolanda/twitterApp-results" 500 12232 5 "es,en" "/home/yolanda" --> Query 1
 
 
 sudo service zookeeper stop
