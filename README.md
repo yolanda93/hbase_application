@@ -52,10 +52,6 @@ Usage example:
       Ex:./hbaseApp.sh 3 1450714465000 1450724465000 10 /local/output/
 
 ```
-## Contact information
-
-Yolanda de la Hoz Simón. yolanda93h@gmail.com
-
 
 Steps:
 
@@ -101,3 +97,14 @@ Stop:   ./hbase-0.98.16.1-hadoop2/bin/stop-hbase.sh
 
 Start HBase: bin/start-hbase.sh
 Start the shell: bin/hbase shell
+
+Mode 1
+./hbaseApp.sh 1  "/home/masteruser1/logs"
+
+
+
+sudo service zookeeper stop
+
+## Contact information
+
+Yolanda de la Hoz Simón. yolanda93h@gmail.com

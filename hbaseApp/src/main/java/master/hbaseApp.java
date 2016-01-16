@@ -172,24 +172,29 @@ public class hbaseApp {
 	 */
 	private void createTable() {
 		System.out.println("Creating table in hbase");
+		System.setProperty("hadoop.home.dir", "/");
 		Configuration conf = HBaseConfiguration.create(); // Instantiating configuration class
 
-		try {		
+		try {
 			admin = new HBaseAdmin(conf);
-			// Instantiating table descriptor class
-			HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("TopTopics"));
+			//if(!admin.tableExists("TopTopics")){// Execute the table through admin	
+				System.out.println("Creating table in hbase");
+				if(!admin.tableExists("TopTopics")){
+				// Instantiating table descriptor class
+				HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("TopTopics"));
 
-			// Adding column families to table descriptor
-			tableDescriptor.addFamily(new HColumnDescriptor("hashtags"));
-
-			if(!admin.tableExists("TopTopics"))// Execute the table through admin			
-			 admin.createTable(tableDescriptor);
-			 table = new HTable(conf, "TopTopics");
-			 System.out.println(" Table created ");
+				// Adding column families to table descriptor
+				tableDescriptor.addFamily(new HColumnDescriptor("hashtags"));
+                 
+				admin.createTable(tableDescriptor);				
+				System.out.println(" Table created ");
+                }
+				table = new HTable(conf, "TopTopics");
+			//}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
+	}	
 
 	/**
 	 * Method to insert into the hbase table
@@ -200,7 +205,7 @@ public class hbaseApp {
 		Result res;
 		try {
 			res = table.get(get);
-			if(res == null){ // insert in table
+			if(res != null){ // insert in table
 				Put put = new Put(key);
 				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"),Bytes.toBytes(hashtag));
 				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("LANG"),Bytes.toBytes(lang));
@@ -216,25 +221,40 @@ public class hbaseApp {
 	 * Method to load the files in hbase
 	 */
 	private void load(String dataFolder) {
-	   System.out.println("Loading data into hbase");	
-		Hashtable<String, Integer> hashtags = new Hashtable<String, Integer>();
-		try(BufferedReader br = new BufferedReader(new FileReader(dataFolder))) {
-			for(String line; (line = br.readLine()) != null; ) {
-				// process line by line
-				String[] fields = line.split(",");
-				int pos = 0;
-				String timestamp = fields[pos++];
-				String lang = fields[pos++];
-				while(pos<fields.length){
-					insertIntoTable(timestamp,lang,fields[pos++],fields[pos++]);
-				}
-			}
-		System.out.println("Data sucessfully loaded");	
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}	
+		System.out.println("Loading data into hbase");	
+		File folder = new File(dataFolder);
+		File[] listOfFiles = folder.listFiles();
+		System.out.println(listOfFiles.length);	
+		for (int i = 0; i < listOfFiles.length; i++) {
+			File file = listOfFiles[i];
+			System.out.println(file.getName());	
+			if (file.isFile() && file.getName().endsWith(".log")) {
+			
+				try(BufferedReader br = new BufferedReader(new FileReader(file))) {
+					for(String line; (line = br.readLine()) != null; ) {
+							
+						// process line by line
+						String[] fields = line.split(",");
+						System.out.println(line);
+						int pos = 0;
+						String timestamp = fields[0];
+						System.out.println(timestamp);
+						String lang = fields[1];
+						System.out.println(lang);
+						pos=2;
+						while(pos<fields.length){
+							insertIntoTable(timestamp,lang,fields[pos++],fields[pos++]);
+						}
+					}
+					System.out.println("Data sucessfully loaded");	
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}	
+			} 
+		}
+
 	}
 
 	/**
