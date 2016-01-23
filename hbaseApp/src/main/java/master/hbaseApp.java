@@ -9,9 +9,16 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Hashtable;
-
-
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.io.IOException;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -49,6 +56,7 @@ public class hbaseApp {
 	private String dataFolder;
 	private HBaseAdmin admin;
 	private HTable table;
+	private String current_table;
 
 	/**
 	 * Method to generate the structure of the key  
@@ -76,43 +84,84 @@ public class hbaseApp {
 	 * a time interval defined with a start and end timestamp. Start and end timestamp are
 	 * in milliseconds.      
 	 */
-	private byte[] generateKey(String timestamp, String lang) {
-		byte[] key = new byte[44];
+	private byte[] generateKey(String timestamp, String hashtag) {
+		byte[] key = new byte[150];
 		System.arraycopy(Bytes.toBytes(timestamp),0,key,0,timestamp.length());
-		System.arraycopy(Bytes.toBytes(lang),0,key,20,lang.length());
+		System.arraycopy(Bytes.toBytes(hashtag),0,key,20,hashtag.length());
 		return key;
 	}
 	
+	private List<Entry<String, Long>> arrangeMap(Map<String, Long> map) {
+		Set<Entry<String, Long>> set = map.entrySet();
+		List<Entry<String, Long>> list = new ArrayList<Entry<String, Long>>(set);
+
+		// lexicographically order
+		Collections.sort(list, new Comparator<Map.Entry<String, Long>>() {
+			Collator c = Collator.getInstance();
+			public int compare(Map.Entry<String, Long> o1, Map.Entry<String, Long> o2) {
+				if(c.compare(o2.getKey(), o1.getKey())==-1)
+					return 1;
+				else if(c.compare(o2.getKey(), o1.getKey())==1)
+					return -1;
+				else
+					return 0;
+			}
+		});
+	
+     Collections.sort(list, new Comparator<Map.Entry<String, Long>>() {
+         public int compare(Map.Entry<String, Long> o1, Map.Entry<String, Long> o2) {            	
+         	return (o2.getValue()).compareTo(o1.getValue());
+         }
+     });
+     return list;
+	}
+     
 	/**
 	 * Method to perform the first query
 	 * Given a language (lang), do find the Top-N most used words for the given language in
 	 * a time interval defined with a start and end timestamp. Start and end timestamp are
 	 * in milliseconds.      
 	 */
-	private void firstQuery(String start_timestamp, String end_timestamp,String N,String lang, String outputFolderPath) {
-		System.out.println("Executing the first query");
-		Scan scan = new Scan(generateStartKey(start_timestamp),
-				generateEndKey(end_timestamp));
-	    //Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
-			//	CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
-		//scan.setFilter(f);
-		System.out.println(scan.getMaxResultSize());
+	private void firstQuery(String query,String start_timestamp, String end_timestamp,int N,String lang, String out_folder_path) {
+		System.out.println("Executing the " + query);
+		Scan scan = new Scan(generateStartKey(start_timestamp),generateEndKey(end_timestamp));
+		if(!lang.equals("NotProvided")){			
+			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
+					CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
+			scan.setFilter(f);
+	     }
 		ResultScanner rs;
 		try {
-			System.out.println("1");
 			rs = table.getScanner(scan);	
-			System.out.println("1");
 			Result res = rs.next();
-			System.out.println("1");
+			Map<String, Long> intervalTopTopic = new HashMap<String,Long>();
 			while (res!=null && !res.isEmpty()){
-				System.out.println("2");
-				// Do something with the result.
+				// Do something with the result		
+				byte [] topic_bytes = res.getValue(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"));
+				byte [] count_bytes = res.getValue(Bytes.toBytes("hashtags"),Bytes.toBytes("COUNTS"));
+				String topic = Bytes.toString(topic_bytes).toString();
+				String count = Bytes.toString(count_bytes).toString();				
+				if(intervalTopTopic.containsKey(topic)){
+					System.out.println("Exists: " + topic + "Counts: " + count);
+					intervalTopTopic.put(topic, intervalTopTopic.get(topic).longValue()+1);
+				}
+				else{
+				    intervalTopTopic.put(topic, (long) Integer.parseInt(count));
+				}
 				res = rs.next();
-			    byte [] value = res.getValue(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"));
-				System.out.println("The result for the first query is:" + Bytes.toString(value).toString());
-			} 
-		}catch (IOException e) {
-			// TODO Auto-generated catch block
+			}
+			List<Entry<String, Long>> intervalTopTopicList = this.arrangeMap(intervalTopTopic);
+			int position = 1;
+			System.out.println("The length is : " + intervalTopTopicList.size());
+			for (Map.Entry<String, Long> entry : intervalTopTopicList) {				            	
+					System.out.println("The result for the first query is:" + "TOPIC: " + entry.getKey() +  " Position: " + position + "Count" + entry.getValue());
+					writeInOutputFile(query,lang, position,entry.getKey(),start_timestamp,end_timestamp,out_folder_path,entry.getValue().toString());	    	
+			    if (position == N) 	
+					break;
+			    else 
+				    position++;
+			}
+		}catch (IOException e) { 	
 			e.printStackTrace();
 		}
 	}
@@ -120,32 +169,12 @@ public class hbaseApp {
 	/**
 	 * Method to perform the second query
 	 * Do find the list of Top-N most used words for each language in a time interval defined
-     * with the provided start and end timestamp. Start and end timestamp are in
-     * milliseconds. 
+     * with the provided start and end timestamp. Start and end timestamp are in milliseconds. 
 	 */
-	private void secondQuery(String start_timestamp, String end_timestamp,String N,String[] languages, String outputFolderPath) {
-	/*	Scan scan = new Scan(generateStartKey(start_timestamp,lang),
-				generateEndKey(end_timestamp,lang));
-
-		for(int i =0;i<languages.length;i++){
-			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
-					CompareFilter.CompareOp.EQUAL,Bytes.toBytes(languages[i]));	
-			scan.setFilter(f);
-		}
-
-		ResultScanner rs;
-		try {
-			rs = table.getScanner(scan);
-			Result res = rs.next();
-			while (res!=null && !res.isEmpty()){
-				// Do something with the result.
-				res = rs.next();
-				System.out.println("The result for the second query is:" + res.toString());
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+	private void secondQuery(String start_timestamp, String end_timestamp,int N,String[] languages, String outputFolderPath) {
+		 for (int i = 0; i <= languages.length - 1; i++) {
+		     firstQuery("query2",start_timestamp,end_timestamp,N,languages[i],outputFolderPath);
+	      }
 	}
 
 	/**
@@ -154,24 +183,8 @@ public class hbaseApp {
      * language in a time interval defined with the provided start and end timestamp. Start
      * and end timestamp are in milliseconds.      	
 	 */
-	private void thirdQuery(String start_timestamp, String end_timestamp,String N,String outputFolderPath) {
-	/*	Scan scan = new Scan(generateStartKey(start_timestamp),
-				generateEndKey(end_timestamp));	
-
-		ResultScanner rs;
-		try {
-			rs = table.getScanner(scan);
-			
-			Result res = rs.next();
-			while (res!=null && !res.isEmpty()){
-				// Do something with the result.
-				res = rs.next();
-				System.out.println("The result for the first query is:" + res.toString());
-			}	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+	private void thirdQuery(String start_timestamp, String end_timestamp,int N,String outputFolderPath) {
+		firstQuery("query3",start_timestamp,end_timestamp,N,"NotProvided",outputFolderPath);
 	}
 
 	/**
@@ -182,22 +195,23 @@ public class hbaseApp {
 		Configuration conf = HBaseConfiguration.create(); // Instantiating configuration class
 		try {
 			admin = new HBaseAdmin(conf);
-			if(!admin.tableExists("TopTopics")){// Execute the table through admin	
+			if(!admin.tableExists(current_table)){// Execute the table through admin	
 				System.out.println("Creating table in hbase");
+				//conf.setStrings("hbase.zookeeper.quorum","node0,node1,node2");
 				// Instantiating table descriptor class
-				HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("TopTopics"));
+				HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf(current_table));
 
 				// Adding column families to table descriptor
 				tableDescriptor.addFamily(new HColumnDescriptor("hashtags"));
                  
-				admin.createTable(tableDescriptor);		
-				table = new HTable(conf, "TopTopics");
-				System.out.println(" Table created ");
-			 }else{
-			    System.out.println("Comnection to the cluster in hbase");
+				admin.createTable(tableDescriptor);	
 				HConnection conn = HConnectionManager.createConnection(conf);
-				table = new HTable(TableName.valueOf("TopTopics"),conn);
-				System.out.println("Connection stablished");
+				table = new HTable(TableName.valueOf(current_table),conn);
+				System.out.println("Table created");
+			 }else{		
+				 HConnection conn = HConnectionManager.createConnection(conf);
+				 table = new HTable(TableName.valueOf(current_table),conn);
+				 System.out.println("Table opened: " + table.getName());
 			 }
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -208,13 +222,14 @@ public class hbaseApp {
 	 * Method to insert rows into the hbase table
 	 */
 	private void insertIntoTable(String timestamp, String lang,String hashtag, String counts) {
-		byte[] key = generateKey(timestamp,lang);
+		System.out.println("Inserting into table with key: " + timestamp + ", " + hashtag);	
+		byte[] key = generateKey(timestamp,hashtag);
 		Get get = new Get(key);
 		Result res;
 		try {
 			res = table.get(get);
+			System.out.println(res.isEmpty());
 			if(res != null){ // insert in table
-				System.out.println("res not null");
 				Put put = new Put(key);
 				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"),Bytes.toBytes(hashtag));
 				put.add(Bytes.toBytes("hashtags"),Bytes.toBytes("LANG"),Bytes.toBytes(lang));
@@ -227,16 +242,16 @@ public class hbaseApp {
 	}
 	
 	/**
-	 * Method to load the files in hbase
+	 * Method to load the files in Hbase
 	 */
 	private void load(String dataFolder) {
 		System.out.println("Loading data into hbase");	
 		File folder = new File(dataFolder);
 		File[] listOfFiles = folder.listFiles();
-		System.out.println(listOfFiles.length);	
+		System.out.println("Number of files: " + listOfFiles.length);	
 		for (int i = 0; i < listOfFiles.length; i++) {
 			File file = listOfFiles[i];
-			System.out.println(file.getName());	
+			System.out.println("Reading the file: " + file.getName());	
 			if (file.isFile() && file.getName().endsWith(".log")) {
 			
 				try(BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -249,7 +264,7 @@ public class hbaseApp {
 						String timestamp = fields[0];
 						System.out.println(timestamp);
 						String lang = fields[1];
-						System.out.println(lang);
+						System.out.println(fields[2]);
 						pos=2;
 						while(pos<fields.length){
 							insertIntoTable(timestamp,lang,fields[pos++],fields[pos++]);
@@ -269,9 +284,14 @@ public class hbaseApp {
 	/**
 	 * Method to store the results of the query in a file  
 	 */
-	private void writeInOutputFile(String query, String language, String position, String word, String startTS,String endTS) {
-        File file = new File(outputFolderPath + "/" + ID + "_" + query + ".out");
-        String content = language + "," + position + "," + word + "," + startTS + "," + endTS;
+	private void writeInOutputFile(String query, String language, int position, String word, String startTS,String endTS, String out_folder_path, String frecuency) {
+        File file = new File(out_folder_path + "/" + ID + "_" + query + ".out");
+        String content;
+        if(query.equals("query3"))
+           content= position + "," + word + "," + frecuency + "," + startTS + "," + endTS;
+        else
+           content= language + "," + position + "," + word + "," + startTS + "," + endTS;
+        
         BufferedWriter bw = null;
         try {
             bw = new BufferedWriter(new FileWriter(file, true));
@@ -291,13 +311,14 @@ public class hbaseApp {
 	 * @param mode Mode to start the app. Mode 1 reads from file. Mode 2 reads from twitter API.     
 	 */
 	private void start(String[] args,int mode) {
+		current_table="TopHashtag";
 	    createTable();
 		switch (mode) {
-		case 1: 	firstQuery(args[1],args[2],args[3],args[4],args[5]);
+		case 1: 	firstQuery("query1",args[1],args[2],Integer.parseInt(args[3]),args[4],args[5]);
 		break;
-		case 2: 	secondQuery(args[1],args[2],args[3],args[4].split(","),args[5]);
+		case 2: 	secondQuery(args[1],args[2],Integer.parseInt(args[3]),args[4].split(","),args[5]);
 		break;
-		case 3: 	thirdQuery(args[1],args[2],args[3],args[4]);
+		case 3: 	thirdQuery(args[1],args[2],Integer.parseInt(args[3]),args[4]);
 		break;
 		case 4: 	load(args[1]);
 		break;     	
@@ -324,7 +345,7 @@ public class hbaseApp {
 					System.out.println("To start the App with mode 2 it is required the mode startTS endTS N language outputFolder");
 					System.exit(1);  
 				}
-				if (mode==3 && args.length!=6 ) {
+				if (mode==3 && args.length!=5 ) {
 					System.out.println("To start the App with mode 3 it is required the mode startTS endTS N language outputFolder");
 					System.exit(1);  
 				}     

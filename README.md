@@ -100,7 +100,9 @@ Start the shell: bin/hbase shell
 
 Mode 1
 ./hbaseApp.sh 4  "/home/masteruser1/logs" --> load in data folder
-1  "1452880270000" "1452880230000" "1" "es" "/home/yolanda"--> Query 1
+ 1  "1452880040000" "1452880110000" "9" "es" "/home/yolanda" --> Query 1
+ 2  "1452880040000" "1452880110000" "6" "es,en,it" "/home/yolanda" --> Query 2
+ 3  1452880040000 1452880110000 5 /home/yolanda --> Query 3
 
 
 sudo service zookeeper stop
