@@ -19,6 +19,8 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -54,6 +56,7 @@ public class hbaseApp {
 	private byte[] generateStartKey(String timestamp) {
 		byte[] key = new byte[44];
 		System.arraycopy(Bytes.toBytes(timestamp),0,key,0,timestamp.length());
+		//System.arraycopy(Bytes.toBytes(lang),0,key,20,lang.length());
 		return key;
 	}
 	
@@ -63,6 +66,7 @@ public class hbaseApp {
 	private byte[] generateEndKey(String timestamp) {
 		byte[] key = new byte[44];
 		System.arraycopy(Bytes.toBytes(timestamp),0,key,0,timestamp.length());
+		//System.arraycopy(Bytes.toBytes(lang),0,key,20,lang.length());
 		return key;
 	}
 	
@@ -89,19 +93,23 @@ public class hbaseApp {
 		System.out.println("Executing the first query");
 		Scan scan = new Scan(generateStartKey(start_timestamp),
 				generateEndKey(end_timestamp));
-		System.out.println("Executing the first query");
-	    Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
-				CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
-		scan.setFilter(f);
-		System.out.println("dsfsdfsd");
+	    //Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
+			//	CompareFilter.CompareOp.EQUAL,Bytes.toBytes(lang));	
+		//scan.setFilter(f);
+		System.out.println(scan.getMaxResultSize());
 		ResultScanner rs;
 		try {
-			rs = table.getScanner(scan);
+			System.out.println("1");
+			rs = table.getScanner(scan);	
+			System.out.println("1");
 			Result res = rs.next();
+			System.out.println("1");
 			while (res!=null && !res.isEmpty()){
+				System.out.println("2");
 				// Do something with the result.
 				res = rs.next();
-				System.out.println("The result for the first query is:" + res.toString());
+			    byte [] value = res.getValue(Bytes.toBytes("hashtags"),Bytes.toBytes("TOPIC"));
+				System.out.println("The result for the first query is:" + Bytes.toString(value).toString());
 			} 
 		}catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -116,8 +124,8 @@ public class hbaseApp {
      * milliseconds. 
 	 */
 	private void secondQuery(String start_timestamp, String end_timestamp,String N,String[] languages, String outputFolderPath) {
-		Scan scan = new Scan(generateStartKey(start_timestamp),
-				generateEndKey(end_timestamp));
+	/*	Scan scan = new Scan(generateStartKey(start_timestamp,lang),
+				generateEndKey(end_timestamp,lang));
 
 		for(int i =0;i<languages.length;i++){
 			Filter f = new SingleColumnValueFilter(Bytes.toBytes("hashtags"), Bytes.toBytes("LANG"),
@@ -137,7 +145,7 @@ public class hbaseApp {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	/**
@@ -147,7 +155,7 @@ public class hbaseApp {
      * and end timestamp are in milliseconds.      	
 	 */
 	private void thirdQuery(String start_timestamp, String end_timestamp,String N,String outputFolderPath) {
-		Scan scan = new Scan(generateStartKey(start_timestamp),
+	/*	Scan scan = new Scan(generateStartKey(start_timestamp),
 				generateEndKey(end_timestamp));	
 
 		ResultScanner rs;
@@ -163,7 +171,7 @@ public class hbaseApp {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	/**
@@ -172,7 +180,6 @@ public class hbaseApp {
 	private void createTable() {
 		System.setProperty("hadoop.home.dir", "/");
 		Configuration conf = HBaseConfiguration.create(); // Instantiating configuration class
-
 		try {
 			admin = new HBaseAdmin(conf);
 			if(!admin.tableExists("TopTopics")){// Execute the table through admin	
@@ -183,17 +190,22 @@ public class hbaseApp {
 				// Adding column families to table descriptor
 				tableDescriptor.addFamily(new HColumnDescriptor("hashtags"));
                  
-				admin.createTable(tableDescriptor);				
+				admin.createTable(tableDescriptor);		
+				table = new HTable(conf, "TopTopics");
 				System.out.println(" Table created ");
+			 }else{
+			    System.out.println("Comnection to the cluster in hbase");
+				HConnection conn = HConnectionManager.createConnection(conf);
+				table = new HTable(TableName.valueOf("TopTopics"),conn);
+				System.out.println("Connection stablished");
 			 }
-			table = new HTable(conf, "TopTopics");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}	
 
 	/**
-	 * Method to insert into the hbase table
+	 * Method to insert rows into the hbase table
 	 */
 	private void insertIntoTable(String timestamp, String lang,String hashtag, String counts) {
 		byte[] key = generateKey(timestamp,lang);

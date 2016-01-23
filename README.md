@@ -100,11 +100,11 @@ Start the shell: bin/hbase shell
 
 Mode 1
 ./hbaseApp.sh 4  "/home/masteruser1/logs" --> load in data folder
-1  "/home/yolanda/twitterApp-results" 500 12232 5 "es,en" "/home/yolanda" --> Query 1
+1  "1452880270000" "1452880230000" "1" "es" "/home/yolanda"--> Query 1
 
 
 sudo service zookeeper stop
 
 ## Contact information
-
+		
 Yolanda de la Hoz Simón. yolanda93h@gmail.com
