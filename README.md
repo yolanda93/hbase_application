@@ -66,7 +66,7 @@ Compile the project and generate hbaseApp.sh script:
 mvn clean compile package appassembler:assemble
 
 ## Example of execution on a cluster
-
+http://138.4.110.141:60010/
 1) Connection to the cluster 
 username: masteruser1
 password: 7Uljjbpb4
@@ -100,7 +100,7 @@ Start the shell: bin/hbase shell
 
 Mode 1
 ./hbaseApp.sh 4  "/home/masteruser1/logs" --> load in data folder
- 1  "1452880040000" "1452880110000" "9" "es" "/home/yolanda" --> Query 1
+ 1  "1452880040000" "1452880110000" "9" "es" "/home/masteruser1" --> Query 1
  2  "1452880040000" "1452880110000" "6" "es,en,it" "/home/yolanda" --> Query 2
  3  1452880040000 1452880110000 5 /home/yolanda --> Query 3
 

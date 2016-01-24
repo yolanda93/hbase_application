@@ -14,12 +14,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.io.IOException;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -37,9 +35,13 @@ import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+
+import com.jcraft.jsch.Logger;
+
 import org.apache.hadoop.hbase.TableName;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 
 /**
  *
@@ -48,16 +50,9 @@ import org.apache.hadoop.conf.Configuration;
  */
 public class hbaseApp {
     private static final String ID = "53826071E";
-	private int startTS;
-	private int endTS;
-	private int N;
-	private String[] languages;
-	private String outputFolderPath;
-	private String dataFolder;
 	private HBaseAdmin admin;
 	private HTable table;
 	private String current_table;
-
 	/**
 	 * Method to generate the structure of the key  
 	 */
@@ -91,6 +86,9 @@ public class hbaseApp {
 		return key;
 	}
 	
+	/**
+	 * Method to arrange lexicographically and rank results.
+	 */
 	private List<Entry<String, Long>> arrangeMap(Map<String, Long> map) {
 		Set<Entry<String, Long>> set = map.entrySet();
 		List<Entry<String, Long>> list = new ArrayList<Entry<String, Long>>(set);
@@ -186,18 +184,21 @@ public class hbaseApp {
 	private void thirdQuery(String start_timestamp, String end_timestamp,int N,String outputFolderPath) {
 		firstQuery("query3",start_timestamp,end_timestamp,N,"NotProvided",outputFolderPath);
 	}
-
+	
+	
+	
 	/**
 	 * Method to create the table in hbase
 	 */
 	private void createTable() {
 		System.setProperty("hadoop.home.dir", "/");
 		Configuration conf = HBaseConfiguration.create(); // Instantiating configuration class
+		conf.set("hbase.zookeeper.quorum", "node2"); 
+		//conf.addResource(new Path("/home/masteruser1/hbase-0.98.16.1-hadoop2/conf/hbase-site.xml"));
 		try {
 			admin = new HBaseAdmin(conf);
 			if(!admin.tableExists(current_table)){// Execute the table through admin	
 				System.out.println("Creating table in hbase");
-				//conf.setStrings("hbase.zookeeper.quorum","node0,node1,node2");
 				// Instantiating table descriptor class
 				HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf(current_table));
 
@@ -207,7 +208,7 @@ public class hbaseApp {
 				admin.createTable(tableDescriptor);	
 				HConnection conn = HConnectionManager.createConnection(conf);
 				table = new HTable(TableName.valueOf(current_table),conn);
-				System.out.println("Table created");
+				System.out.println("Table created: "  + table.getName());
 			 }else{		
 				 HConnection conn = HConnectionManager.createConnection(conf);
 				 table = new HTable(TableName.valueOf(current_table),conn);
@@ -311,7 +312,7 @@ public class hbaseApp {
 	 * @param mode Mode to start the app. Mode 1 reads from file. Mode 2 reads from twitter API.     
 	 */
 	private void start(String[] args,int mode) {
-		current_table="TopHashtag";
+		current_table="TopTopic1";
 	    createTable();
 		switch (mode) {
 		case 1: 	firstQuery("query1",args[1],args[2],Integer.parseInt(args[3]),args[4],args[5]);
@@ -338,7 +339,7 @@ public class hbaseApp {
 			try {
 				mode = Integer.parseInt(args[0]);
 				if (mode==4 && args.length<2 ) {
-					System.out.println("To start the App with mode 1 it is required the mode and the dataFolder");
+					System.out.println("To start the App with mode 4 it is required the mode and the dataFolder");
 					System.exit(1);  
 				}
 				if (mode==2 && args.length!=6 ) {
@@ -356,7 +357,7 @@ public class hbaseApp {
 
 				hbaseApp app = new hbaseApp();
 				app.start(args,mode);
-				app.admin.shutdown();
+				//app.admin.shutdown();
 
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
