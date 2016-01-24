@@ -38,71 +38,64 @@ Script parameters:
  • outputFolder: path to the folder where to store the files with the query results.
 
   
-Usage example:
+### Usage example:
 
-   o Load: ./hbaseApp.sh mode dataFolder
+ • Load: ./hbaseApp.sh mode dataFolder
       Ex:./hbaseApp.sh 4  /home/masteruser1/logs 
-   o Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
+ • Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
       Ex:./hbaseApp.sh 1  1452880040000 1452880110000 9 es /home/masteruser1
-   o Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
+ • Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
       Ex:./hbaseApp.sh 2  1452880040000 1452880110000 6 es,en,it /home/yolanda 
-   o Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
+ • Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
       Ex:./hbaseApp.sh 3  1452880040000 1452880110000 5 /home/yolanda
 
-```
 
-Steps:
+
+### Steps:
 
 0. Generate the files lang.out
 1. hbase-site.xml with the property hbase.zookeeper.quorum: it must point to ZK instance of the mini cluster assigned to your group
-2. Load in hbase files
-
-Store the result of the query in a file 
-
-Compile the project and generate hbaseApp.sh script:
-
-mvn clean compile package appassembler:assemble
+2. Compile the project and generate hbaseApp.sh script:
+	mvn clean compile package appassembler:assemble
 
 ## Example of execution on a cluster
-http://138.4.110.141:60010/
+
 1) Connection to the cluster 
-username: masteruser1
-password: 7Uljjbpb4
-
-Copy the files
+```
+ssh masteruser1@138.4.110.141 -p 51002 --> storm H2
+ssh masteruser1@138.4.110.141 -p 51001 --> Hadoop and Hbase H1
+```
+2) Copy files
+```
 scp -P 51001 -r appassembler masteruser1@138.4.110.141:/home/masteruser1
-
-Zookeeper on H2 must be up and running
-
-ssh masteruser1@138.4.110.141 -p 51002 --> storm H2	
-
+```
+3) Zookeeper on H2 must be up and running
+```
 ./zookeeper-3.4.6/bin/zkServer.sh start
 ./zookeeper-3.4.6/bin/zkServer.sh stop
-
-ssh masteruser1@138.4.110.141 -p 51001 --> Hadoop and Hbase H1	
-
+```
+4) Run haddoop
+```
 Hadoop start/stop from H1: 
  Start:  ./hadoop-2.5.2/sbin/start-dfs.sh
  Stop:   ./hadoop-2.5.2/sbin/stop-dfs.sh
-
-Hbase
+```
+5) Run Hbase
+```
 start/stop from H1: 
-
 Start:  ./hbase-0.98.16.1-hadoop2/bin/start-hbase.sh
 Stop:   ./hbase-0.98.16.1-hadoop2/bin/stop-hbase.sh
 
-1) Run hbase 
+HBase UI
+http://138.4.110.141:60010/
 
-Start HBase: bin/start-hbase.sh
 Start the shell: bin/hbase shell
+```
 
-Mode 1
-     
- 
-
-
+6) If you have a zookeeper already running, it is required to stop it first.
+```
 sudo service zookeeper stop
-
+```
 ## Contact information
 		
 Yolanda de la Hoz Simón. yolanda93h@gmail.com
