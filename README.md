@@ -39,7 +39,7 @@ Script parameters:
 
   
 ### Usage example:
-´´´
+```
 * Load: ./hbaseApp.sh mode dataFolder
       Ex: $ ./hbaseApp.sh 4  /home/masteruser1/logs 
 * Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
@@ -49,7 +49,7 @@ Script parameters:
 * Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
       Ex: $./hbaseApp.sh 3  1452880040000 1452880110000 5 /home/yolanda
 
-´´´
+```
 ### Steps:
 
 0. Generate the files lang.out
