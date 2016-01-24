@@ -25,32 +25,31 @@ The query set is composed by 3 queries:
 
 Script parameters:
 
- • mode: integer whose value can be: 
-	  • 1: run first query
-	  • 2: run second query
-	  • 3: run third query
-	  • 4: load data files
- • startTS: timestamp in milliseconds to be used as start timestamp.
- • endTS: timestamp in milliseconds to be used as end timestamp.
- • N: size of the ranking for the top-N.
- • Languages: one language or a cvs list of languages.
- • dataFolder: path to the folder containing the files with the trending topics (the path is related to the filesystem of the node that will be used to run the HBase app). File names are lang.out, for example en.out, it.out, es.out...
- • outputFolder: path to the folder where to store the files with the query results.
+* mode: integer whose value can be: 
+     * 1: run first query
+     * 2: run second query
+ 	 * 3: run third query
+	 * 4: load data files
+ * startTS: timestamp in milliseconds to be used as start timestamp.
+ *  endTS: timestamp in milliseconds to be used as end timestamp.
+ *  N: size of the ranking for the top-N.
+ * Languages: one language or a cvs list of languages.
+ *  dataFolder: path to the folder containing the files with the trending topics (the path is related to the filesystem of the node that will be used to run the HBase app). File names are lang.out, for example en.out, it.out, es.out...
+ * outputFolder: path to the folder where to store the files with the query results.
 
   
 ### Usage example:
+´´´
+* Load: ./hbaseApp.sh mode dataFolder
+      Ex: $ ./hbaseApp.sh 4  /home/masteruser1/logs 
+* Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
+      Ex: $ ./hbaseApp.sh 1  1452880040000 1452880110000 9 es /home/masteruser1
+* Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
+      Ex: $ ./hbaseApp.sh 2  1452880040000 1452880110000 6 es,en,it /home/yolanda 
+* Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
+      Ex: $./hbaseApp.sh 3  1452880040000 1452880110000 5 /home/yolanda
 
- • Load: ./hbaseApp.sh mode dataFolder
-      Ex:./hbaseApp.sh 4  /home/masteruser1/logs 
- • Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
-      Ex:./hbaseApp.sh 1  1452880040000 1452880110000 9 es /home/masteruser1
- • Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
-      Ex:./hbaseApp.sh 2  1452880040000 1452880110000 6 es,en,it /home/yolanda 
- • Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
-      Ex:./hbaseApp.sh 3  1452880040000 1452880110000 5 /home/yolanda
-
-
-
+´´´
 ### Steps:
 
 0. Generate the files lang.out
