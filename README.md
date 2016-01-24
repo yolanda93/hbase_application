@@ -25,11 +25,11 @@ The query set is composed by 3 queries:
 
 Script parameters:
 
- • mode: integer whose value can be:
-	 • 1: run first query
-	 • 2: run second query
-	 • 3: run third query
-	 • 4: load data files
+ • mode: integer whose value can be: 
+	  • 1: run first query
+	  • 2: run second query
+	  • 3: run third query
+	  • 4: load data files
  • startTS: timestamp in milliseconds to be used as start timestamp.
  • endTS: timestamp in milliseconds to be used as end timestamp.
  • N: size of the ranking for the top-N.
