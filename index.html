@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Hbase application by yolanda93</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Hbase application</h1>
+      <h2 class="project-tagline">Java application that stores trending topics from Twitter into HBase and provides users with a set of queries for data analysis.</h2>
+      <a href="https://github.com/yolanda93/hbase_application" class="btn">View on GitHub</a>
+      <a href="https://github.com/yolanda93/hbase_application/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/yolanda93/hbase_application/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="hbase-application" class="anchor" href="#hbase-application" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>HBase application</h1>
+
+<p>The goal of this project is to implement a Java application that stores trending topics from Twitter into HBase and provides users with a set of queries for data analysis.</p>
+
+<p>The trending topics to load in HBase are stored into text files with the same format used to store the results of the project 1 assignment.
+This format is: 1 file per language and each line of the file with the CSV format “timestamp_ms, lang, tophashtag1, frequencyhashtag1, tophashtag2, frequencyhashtag2, tophashtag3, frequencyhashtag3”.</p>
+
+<p>The query set is composed by 3 queries:</p>
+
+<pre><code>1. Given a language (lang), do find the Top-N most used words for the given language in
+a time interval defined with a start and end timestamp. Start and end timestamp are
+in milliseconds.
+
+2. Do find the list of Top-N most used words for each language in a time interval defined
+with the provided start and end timestamp. Start and end timestamp are in
+milliseconds.
+
+3. Do find the Top-N most used words and the frequency of each word regardless the
+language in a time interval defined with the provided start and end timestamp. Start
+and end timestamp are in milliseconds.
+</code></pre>
+
+<h2>
+<a id="hbaseappsh" class="anchor" href="#hbaseappsh" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>HBaseApp.sh</h2>
+
+<h3>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage:</h3>
+
+<p>Script parameters:</p>
+
+<ul>
+<li>mode: integer whose value can be: 
+
+<ul>
+<li>1: run first query</li>
+<li>2: run second query</li>
+<li>3: run third query</li>
+<li>4: load data files
+
+<ul>
+<li>startTS: timestamp in milliseconds to be used as start timestamp.</li>
+<li> endTS: timestamp in milliseconds to be used as end timestamp.</li>
+<li> N: size of the ranking for the top-N.</li>
+<li>Languages: one language or a cvs list of languages.</li>
+<li> dataFolder: path to the folder containing the files with the trending topics (the path is related to the filesystem of the node that will be used to run the HBase app). File names are lang.out, for example en.out, it.out, es.out...</li>
+<li>outputFolder: path to the folder where to store the files with the query results.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<a id="usage-example" class="anchor" href="#usage-example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage example:</h3>
+
+<pre><code>* Load: ./hbaseApp.sh mode dataFolder
+      Ex: $ ./hbaseApp.sh 4  /home/masteruser1/logs 
+* Query1: ./hbaseApp.sh mode startTS endTS N language outputFolder
+      Ex: $ ./hbaseApp.sh 1  1452880040000 1452880110000 9 es /home/masteruser1
+* Query2: ./hbaseApp.sh mode startTS endTS N language outputFolder
+      Ex: $ ./hbaseApp.sh 2  1452880040000 1452880110000 6 es,en,it /home/yolanda 
+* Query3: ./hbaseApp.sh mode startTS endTS N outputFolder
+      Ex: $./hbaseApp.sh 3  1452880040000 1452880110000 5 /home/yolanda
+
+</code></pre>
+
+<h3>
+<a id="steps" class="anchor" href="#steps" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Steps:</h3>
+
+<ol>
+<li>Generate the files lang.out</li>
+<li>hbase-site.xml with the property hbase.zookeeper.quorum: it must point to ZK instance of the mini cluster assigned to your group</li>
+<li>Compile the project and generate hbaseApp.sh script:
+mvn clean compile package appassembler:assemble</li>
+</ol>
+
+<h2>
+<a id="example-of-execution-on-a-cluster" class="anchor" href="#example-of-execution-on-a-cluster" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example of execution on a cluster</h2>
+
+<p>1) Connection to the cluster </p>
+
+<pre><code>ssh masteruser1@138.4.110.141 -p 51002 --&gt; storm H2
+ssh masteruser1@138.4.110.141 -p 51001 --&gt; Hadoop and Hbase H1
+</code></pre>
+
+<p>2) Copy files</p>
+
+<pre><code>scp -P 51001 -r appassembler masteruser1@138.4.110.141:/home/masteruser1
+</code></pre>
+
+<p>3) Zookeeper on H2 must be up and running</p>
+
+<pre><code>./zookeeper-3.4.6/bin/zkServer.sh start
+./zookeeper-3.4.6/bin/zkServer.sh stop
+</code></pre>
+
+<p>4) Run haddoop</p>
+
+<pre><code>Hadoop start/stop from H1: 
+ Start:  ./hadoop-2.5.2/sbin/start-dfs.sh
+ Stop:   ./hadoop-2.5.2/sbin/stop-dfs.sh
+</code></pre>
+
+<p>5) Run Hbase</p>
+
+<pre><code>start/stop from H1: 
+Start:  ./hbase-0.98.16.1-hadoop2/bin/start-hbase.sh
+Stop:   ./hbase-0.98.16.1-hadoop2/bin/stop-hbase.sh
+
+HBase UI
+http://138.4.110.141:60010/
+
+Start the shell: bin/hbase shell
+</code></pre>
+
+<p>6) If you have a zookeeper already running, it is required to stop it first.</p>
+
+<pre><code>sudo service zookeeper stop
+</code></pre>
+
+<h2>
+<a id="contact-information" class="anchor" href="#contact-information" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contact information</h2>
+
+<p>Yolanda de la Hoz Simón. <a href="mailto:yolanda93h@gmail.com">yolanda93h@gmail.com</a></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/yolanda93/hbase_application">Hbase application</a> is maintained by <a href="https://github.com/yolanda93">yolanda93</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
